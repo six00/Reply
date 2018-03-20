@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.Toast;
 
 import java.util.List;
 
@@ -22,11 +23,10 @@ public class AutoReplyService extends AccessibilityService {
     private static final String TAG = "AutoReplyService";
     private Handler mHandler = new Handler();
 
-    public static final String RED_ENVELOP_SP = "RED_ENVELOP_SP";
-    public static final String SET_DELAY_TIME = "SET_DELAY_TIME";
-    public static final String SET_LOCATION_X = "SET_LOCATION_X";
-    public static final String SET_LOCATION_Y = "SET_LOCATION_Y";
-
+    public static final String CONTENT_SP = "CONTENT_SP";
+    public static final String SET_CATCH_CONTENT = "SET_CATCH_CONTENT";
+    public static final String SET_CUT_START = "SET_CUT_START";
+    public static final String SET_CUT_END = "SET_CUT_END";
 
     @Override
     public void onCreate() {
@@ -49,8 +49,8 @@ public class AutoReplyService extends AccessibilityService {
      */
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
-        Log.i("six", "ok");
-        if (sCurState != STOP_RED) {
+        Log.i("six", "service ok");
+        if (sCurState != STOP) {
             Log.d(TAG, "onAccessibilityEvent: sCurState=>" + sCurState);
             AccessibilityNodeInfo rootInActiveWindow = getRootInActiveWindow();
 
@@ -61,25 +61,18 @@ public class AutoReplyService extends AccessibilityService {
 //                    clickNotification(rootInActiveWindow, event);
 ////                    break;
                 case AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED:
-//                    if (event.getPackageName().equals("com.tencent.mm")) {
                     reply(rootInActiveWindow);
-                    Log.i("six", "good to go");
-//                    }
+                    Log.i("six", "event ok, good to go");
                     break;
                 default:
                     return;
             }
         }
-//        showAllText(getRootInActiveWindow());
     }
 
     public static int sCurState;
     public static final int DEFAULT = 0;
-    public static final int CHECK_RED = 1;
-    public static final int GET_RED = 2;
-    public static final int STOP_RED = 3;
-
-//    private boolean isNeedBack = true;
+    public static final int STOP = 2;
 
     /**
      * 点击
@@ -87,23 +80,47 @@ public class AutoReplyService extends AccessibilityService {
      * @throws Exception
      */
     private void reply(final AccessibilityNodeInfo rootInActiveWindow) {
-
         if (rootInActiveWindow != null) {
-            final SharedPreferences sp = getSharedPreferences(AutoReplyService.RED_ENVELOP_SP, MODE_PRIVATE);
-            //点击红包
+            final SharedPreferences sp = getSharedPreferences(AutoReplyService.CONTENT_SP, MODE_PRIVATE);
             if (sCurState == DEFAULT) {
-
-//                List<AccessibilityNodeInfo> checkRedNodeInfos = null;
-//six
-                List<AccessibilityNodeInfo> msgNode = rootInActiveWindow.findAccessibilityNodeInfosByText("");
-
+                String catchContent = sp.getString(AutoReplyService.SET_CATCH_CONTENT,"大王叫我来巡山喽！");
+                List<AccessibilityNodeInfo> msgNode = rootInActiveWindow.findAccessibilityNodeInfosByText(catchContent);
                 if (msgNode != null && msgNode.size() > 0) {
                     Log.i("six", "bingo!");
                     //发送对应消息的代码
                     CharSequence msgChar = msgNode.get(2).getText();
                     String msg = msgChar + "";
-                    int begin = msg.indexOf("“") + 1;
-                    int end = msg.indexOf("”");
+                    String cutStart = sp.getString(AutoReplyService.SET_CUT_START,"");
+                    String cutEnd = sp.getString(AutoReplyService.SET_CUT_END,"");
+                    int begin;
+                    int end;
+//                    begin = msg.indexOf(cutStart)+1;
+//                    end = msg.indexOf(cutEnd);
+                    if(cutStart.isEmpty())
+                        begin = 0;
+                    else {
+                        if(msg.indexOf(cutStart)==-1){
+                            Toast.makeText(this, "没找到对应内容,请确认设置", Toast.LENGTH_SHORT).show();
+                            sCurState = STOP;
+                            return;
+                        }else
+                            begin = msg.indexOf(cutStart) + 1;
+                        }
+
+                    if(cutEnd.isEmpty())
+                        end = msg.length();
+                    else{
+                        if(msg.indexOf(cutEnd)==-1){
+                            Toast.makeText(this, "没找到对应内容,请确认设置", Toast.LENGTH_SHORT).show();
+                            sCurState = STOP;
+                            return;
+                        }else
+                            end = msg.indexOf(cutEnd);
+//                            //增加英文冒号的兼容
+////                            msg = msg.substring(begin);
+//                            end = msg.indexOf(cutEnd);
+//                        }
+                    }
                     String toSend = msg.substring(begin, end);
                     Log.i("six", toSend);
 
@@ -120,15 +137,15 @@ public class AutoReplyService extends AccessibilityService {
                         sendNodeInfo.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
                     } else
                         return;
-                    sCurState = STOP_RED;
+                    sCurState = STOP;
                 } else {
                     return;
                 }
-//six
             }
         }
     }
 
+    //输入内容
     private void setTextToView(AccessibilityNodeInfo node, String text) {
         Bundle arguments = new Bundle();
         arguments.putInt(AccessibilityNodeInfo.ACTION_ARGUMENT_MOVEMENT_GRANULARITY_INT,
@@ -164,7 +181,7 @@ public class AutoReplyService extends AccessibilityService {
 //        if (eventText != null) {
 //            for (CharSequence key : eventText) {
 //                Log.d(TAG, "clickNotification: key=>" + key);
-//                if (((String) key).contains("[微信]")) {
+//                if (((String) key).contains("[钉钉]")) {
 //                    Notification notification = (Notification) event.getParcelableData();
 //                    try {
 //                        notification.contentIntent.send();//点击通知栏

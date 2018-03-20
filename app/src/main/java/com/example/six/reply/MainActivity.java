@@ -23,77 +23,140 @@ public class MainActivity extends AppCompatActivity {
 
     private Switch mStartSwitch;
     private EditText mDelayTimeEd;
+    private EditText mCatchContent;
+    private EditText mCutStart;
+    private EditText mCutEnd;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mStartSwitch = ((Switch) findViewById(R.id.start));
+        mStartSwitch = findViewById(R.id.start);
         mDelayTimeEd = findViewById(R.id.delay_timte);
-
-
+        mCatchContent = findViewById(R.id.catchContent);
+        mCutEnd = findViewById(R.id.cutEnd);
+        mCutStart = findViewById(R.id.cutStart);
+        init();
         mStartSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (buttonView.isChecked()) {
                     if (!isAccessibilitySettingsOn(MainActivity.this)) {
-                        Toast.makeText(MainActivity.this, "请前往辅助功能给予权限", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "请前往辅助功能给予权限", Toast.LENGTH_LONG).show();
                         startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
                     }
                     AutoReplyService.sCurState = AutoReplyService.DEFAULT;
                 } else {
-                    AutoReplyService.sCurState = AutoReplyService.STOP_RED;
+                    AutoReplyService.sCurState = AutoReplyService.STOP;
                 }
             }
         });
 
+        findViewById(R.id.set_catchContent).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String catchContent = mCatchContent.getText().toString();
+                if(!TextUtils.isEmpty(catchContent)){
+                    SharedPreferences sp = getSharedPreferences(AutoReplyService.CONTENT_SP,MODE_PRIVATE);
+                    sp.edit().putString(AutoReplyService.SET_CATCH_CONTENT,catchContent).apply();
+                    Toast.makeText(MainActivity.this, "成功设置自定义检测内容", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        findViewById(R.id.set_cutStart).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String cutStart = mCutStart.getText().toString();
+//                if(!TextUtils.isEmpty(cutStart)){
+                    SharedPreferences sp = getSharedPreferences(AutoReplyService.CONTENT_SP,MODE_PRIVATE);
+                    sp.edit().putString(AutoReplyService.SET_CUT_START,cutStart).apply();
+                    Toast.makeText(MainActivity.this, "成功设置截断起始字符", Toast.LENGTH_SHORT).show();
+//                }
+            }
+        });
+
+        findViewById(R.id.set_cutEnd).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String cutEnd = mCutEnd.getText().toString();
+//                if(!TextUtils.isEmpty(cutEnd)){
+                    SharedPreferences sp = getSharedPreferences(AutoReplyService.CONTENT_SP,MODE_PRIVATE);
+                    sp.edit().putString(AutoReplyService.SET_CUT_END,cutEnd).apply();
+                    Toast.makeText(MainActivity.this, "成功设置截断结束字符", Toast.LENGTH_SHORT).show();
+//                }
+            }
+        });
+
+        findViewById(R.id.reset).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                SharedPreferences sp = getSharedPreferences(AutoReplyService.CONTENT_SP,MODE_PRIVATE);
+                sp.edit().putString(AutoReplyService.SET_CATCH_CONTENT,"").apply();
+                sp.edit().putString(AutoReplyService.SET_CUT_START,"").apply();
+                sp.edit().putString(AutoReplyService.SET_CUT_END,"").apply();
+                mCatchContent.setText("");
+                mCutStart.setText("");
+                mCutEnd.setText("");
+                Toast.makeText(MainActivity.this, "重置成功", Toast.LENGTH_SHORT).show();
+            }
+        });
         //设置延迟时间
-        findViewById(R.id.set_delay_time).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                String delayTime = mDelayTimeEd.getText().toString();
-                if (!TextUtils.isEmpty(delayTime)) {
-                    SharedPreferences sp = getSharedPreferences(AutoReplyService.RED_ENVELOP_SP, MODE_PRIVATE);
-                    Integer time = Integer.valueOf(delayTime);
-                    if (time < 0) {
-                        time = 0;
-                    }
-                    sp.edit().putInt(AutoReplyService.SET_DELAY_TIME, time).apply();
-                    Toast.makeText(MainActivity.this, "成功设置延迟抢:" + time + "毫秒", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
+//        findViewById(R.id.set_delay_time).setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                String delayTime = mDelayTimeEd.getText().toString();
+//                if (!TextUtils.isEmpty(delayTime)) {
+//                    SharedPreferences sp = getSharedPreferences(AutoReplyService.RED_ENVELOP_SP, MODE_PRIVATE);
+//                    Integer time = Integer.valueOf(delayTime);
+//                    if (time < 0) {
+//                        time = 0;
+//                    }
+//                    sp.edit().putInt(AutoReplyService.SET_DELAY_TIME, time).apply();
+//                    Toast.makeText(MainActivity.this, "成功设置延迟:" + time + "毫秒", Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        });
 
-
-        //还原默认位置
-        findViewById(R.id.reset_location).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                SharedPreferences sp = getSharedPreferences(AutoReplyService.RED_ENVELOP_SP, MODE_PRIVATE);
-                sp.edit().putInt(AutoReplyService.SET_LOCATION_X, 500).apply();
-                sp.edit().putInt(AutoReplyService.SET_LOCATION_Y, 1120).apply();
-                onResume();
-            }
-        });
     }
+
+    private void init() {
+        SharedPreferences sp = getSharedPreferences(AutoReplyService.CONTENT_SP, MODE_PRIVATE);
+        String content = sp.getString(AutoReplyService.SET_CATCH_CONTENT,"");
+        String start = sp.getString(AutoReplyService.SET_CUT_START,"");
+        String end = sp.getString(AutoReplyService.SET_CUT_END,"");
+        if(content.isEmpty()){
+            Toast.makeText(this, "请先设置检测内容", Toast.LENGTH_LONG).show();
+//            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+//            imm.showSoftInput(mCatchContent,0);
+        }else{
+            mCatchContent.setText(content);
+        }
+        if(!start.isEmpty())
+            mCutStart.setText(start);
+        if(!end.isEmpty())
+            mCutEnd.setText(end);
+    }
+
+//    @Override
+//    protected void onDestroy() {
+//        super.onDestroy();
+//        if(isServiceRunning()){
+//            Intent i = new Intent(this, AutoReplyService.class);
+//            getApplicationContext().startService(i);
+//
+//        }
+//    }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if (isAccessibilitySettingsOn(this) && AutoReplyService.sCurState != AutoReplyService.STOP_RED) {
+        if (isAccessibilitySettingsOn(this) && AutoReplyService.sCurState != AutoReplyService.STOP) {
             mStartSwitch.setChecked(true);
         } else {
             mStartSwitch.setChecked(false);
         }
 
-        SharedPreferences sp = getSharedPreferences(AutoReplyService.RED_ENVELOP_SP, MODE_PRIVATE);
-//        if (sp.getBoolean(AutoReplyService.SET_OWNER_RED, false)) {
-//            mSetOwnerSwitcher.setChecked(true);
-//        } else {
-//            mSetOwnerSwitcher.setChecked(false);
-//        }
-        mDelayTimeEd.setText(String.valueOf(sp.getInt(AutoReplyService.SET_DELAY_TIME, 500)));
-//        mX.setText(String.valueOf(sp.getInt(AutoReplyService.SET_LOCATION_X, 500)));
-//        mY.setText(String.valueOf(sp.getInt(AutoReplyService.SET_LOCATION_Y, 1120)));
     }
 
     /**
@@ -141,17 +204,4 @@ public class MainActivity extends AppCompatActivity {
         }
         return ret;
     }
-
-    /*
-    // 请求Accessibility权限
-                if (!isAccessibilitySettingsOn(MainActivity.this)) {
-                    // 引导至辅助功能设置页面
-                    startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
-                } else {
-                    // 执行辅助功能服务相关操作
-                    Toast.makeText(MainActivity.this, "Perfect 您有该权限", Toast.LENGTH_SHORT).show();
-                }
-                break;
-
-     */
 }
