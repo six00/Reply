@@ -26,6 +26,7 @@ public class AutoReplyService extends AccessibilityService {
     public static final String SET_CATCH_CONTENT = "SET_CATCH_CONTENT";
     public static final String SET_CUT_START = "SET_CUT_START";
     public static final String SET_CUT_END = "SET_CUT_END";
+    public static final String SET_SELF_CONTENT = "SET_SELF_CONTENT";
 
     @Override
     public void onCreate() {

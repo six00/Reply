@@ -26,6 +26,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText mCatchContent;
     private EditText mCutStart;
     private EditText mCutEnd;
+    private Switch mModeSwitch;
+    private EditText mSelfContent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +38,8 @@ public class MainActivity extends AppCompatActivity {
         mCatchContent = findViewById(R.id.catchContent);
         mCutEnd = findViewById(R.id.cutEnd);
         mCutStart = findViewById(R.id.cutStart);
+        mModeSwitch = findViewById(R.id.mode);
+        mSelfContent = findViewById(R.id.selfContent);
         init();
         mStartSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -50,6 +54,21 @@ public class MainActivity extends AppCompatActivity {
 //                    startService(i);
                 } else {
                     AutoReplyService.sCurState = AutoReplyService.STOP;
+                }
+            }
+        });
+
+        mModeSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+                if(compoundButton.isChecked()){
+                    mCutStart.setEnabled(false);
+                    mCutEnd.setEnabled(false);
+                    mSelfContent.setEnabled(true);
+                }else{
+                    mCutStart.setEnabled(true);
+                    mCutEnd.setEnabled(true);
+                    mSelfContent.setEnabled(false);
                 }
             }
         });
@@ -90,6 +109,16 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        findViewById(R.id.set_selfContent).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String selfContent = mSelfContent.getText().toString();
+                SharedPreferences sp = getSharedPreferences(AutoReplyService.CONTENT_SP,MODE_PRIVATE);
+                sp.edit().putString(AutoReplyService.SET_SELF_CONTENT,selfContent).apply();
+                Toast.makeText(MainActivity.this, "成功设置自定义回复内容", Toast.LENGTH_SHORT).show();
+            }
+        });
+
         findViewById(R.id.reset).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -127,6 +156,7 @@ public class MainActivity extends AppCompatActivity {
         String content = sp.getString(AutoReplyService.SET_CATCH_CONTENT,"");
         String start = sp.getString(AutoReplyService.SET_CUT_START,"");
         String end = sp.getString(AutoReplyService.SET_CUT_END,"");
+        mSelfContent.setEnabled(false);
         if(content.isEmpty()){
             Toast.makeText(this, "请先设置检测内容", Toast.LENGTH_LONG).show();
 //            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
