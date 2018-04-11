@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -20,8 +19,8 @@ import java.util.List;
  * Created by Six on 2018/3/13.
  */
 public class AutoReplyService extends AccessibilityService {
-    private static final String TAG = "AutoReplyService";
-    private Handler mHandler = new Handler();
+    private final String TAG = "AutoReplyService";
+//    private Handler mHandler = new Handler();
 
     public static final String CONTENT_SP = "CONTENT_SP";
     public static final String SET_CATCH_CONTENT = "SET_CATCH_CONTENT";
@@ -51,7 +50,7 @@ public class AutoReplyService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         Log.i("six", "service ok");
         if (sCurState != STOP) {
-            Log.d(TAG, "onAccessibilityEvent: sCurState=>" + sCurState);
+//            Log.d(TAG, "onAccessibilityEvent: sCurState=>" + sCurState);
             AccessibilityNodeInfo rootInActiveWindow = getRootInActiveWindow();
 
             //event.getSource:得到的是被点击的单体对象
@@ -81,17 +80,24 @@ public class AutoReplyService extends AccessibilityService {
      */
     private void reply(final AccessibilityNodeInfo rootInActiveWindow) {
         if (rootInActiveWindow != null) {
-            final SharedPreferences sp = getSharedPreferences(AutoReplyService.CONTENT_SP, MODE_PRIVATE);
+            final SharedPreferences sp = getSharedPreferences("CONTENT_SP", MODE_PRIVATE);
             if (sCurState == DEFAULT) {
-                String catchContent = sp.getString(AutoReplyService.SET_CATCH_CONTENT,"大王叫我来巡山喽！");
+                String catchContent = sp.getString("SET_CATCH_CONTENT","大王叫我来巡山喽！");
                 List<AccessibilityNodeInfo> msgNode = rootInActiveWindow.findAccessibilityNodeInfosByText(catchContent);
                 if (msgNode != null && msgNode.size() > 0) {
                     Log.i("six", "bingo!");
                     //发送对应消息的代码
-                    CharSequence msgChar = msgNode.get(2).getText();
+                    CharSequence msgChar =null;
+                    try {
+                        msgChar = msgNode.get(2).getText();
+                    }catch (Exception e){
+                        e.printStackTrace();
+                        Toast.makeText(this, "获取内容错误", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
                     String msg = msgChar + "";
-                    String cutStart = sp.getString(AutoReplyService.SET_CUT_START,"");
-                    String cutEnd = sp.getString(AutoReplyService.SET_CUT_END,"");
+                    String cutStart = sp.getString(SET_CUT_START,"");
+                    String cutEnd = sp.getString(SET_CUT_END,"");
                     int begin;
                     int end;
 //                    begin = msg.indexOf(cutStart)+1;
@@ -102,6 +108,7 @@ public class AutoReplyService extends AccessibilityService {
                         if(msg.indexOf(cutStart)==-1){
                             Toast.makeText(this, "没找到对应内容,请确认设置", Toast.LENGTH_SHORT).show();
                             sCurState = STOP;
+//                            stopSelf();
                             return;
                         }else
                             begin = msg.indexOf(cutStart) + 1;
@@ -113,31 +120,33 @@ public class AutoReplyService extends AccessibilityService {
                         if(msg.indexOf(cutEnd)==-1){
                             Toast.makeText(this, "没找到对应内容,请确认设置", Toast.LENGTH_SHORT).show();
                             sCurState = STOP;
+//                            stopSelf();
                             return;
-                        }else
-                            end = msg.indexOf(cutEnd);
+                        }else{
 //                            //增加英文冒号的兼容
-////                            msg = msg.substring(begin);
-//                            end = msg.indexOf(cutEnd);
-//                        }
+                            msg = msg.substring(begin);
+                            end = msg.indexOf(cutEnd);
+                        }
                     }
-                    String toSend = msg.substring(begin, end);
+                    String toSend = msg.substring(0, end);
                     Log.i("six", toSend);
 
                     List<AccessibilityNodeInfo> editTextNodeInfo = rootInActiveWindow.findAccessibilityNodeInfosByViewId("com.alibaba.android.rimet:id/et_sendmessage");
-                    List<AccessibilityNodeInfo> sendNodeInfo = rootInActiveWindow.findAccessibilityNodeInfosByViewId("com.alibaba.android.rimet:id/btn_send");
 
                     if (!editTextNodeInfo.isEmpty() && editTextNodeInfo != null) {
 //                        editTextNodeInfo.get(0).setText(toSend);
                         setTextToView(editTextNodeInfo.get(0), toSend);
-                    } else
+                    } else {
                         return;
+                    }
+                    List<AccessibilityNodeInfo> sendNodeInfo = rootInActiveWindow.findAccessibilityNodeInfosByViewId("com.alibaba.android.rimet:id/btn_send");
 
                     if (!sendNodeInfo.isEmpty() && sendNodeInfo != null) {
                         sendNodeInfo.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
                     } else
                         return;
                     sCurState = STOP;
+//                    stopSelf();
                 } else {
                     return;
                 }

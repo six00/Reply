@@ -46,6 +46,8 @@ public class MainActivity extends AppCompatActivity {
                         startActivity(new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS));
                     }
                     AutoReplyService.sCurState = AutoReplyService.DEFAULT;
+//                    Intent i = new Intent(MainActivity.this,AutoReplyService.class);
+//                    startService(i);
                 } else {
                     AutoReplyService.sCurState = AutoReplyService.STOP;
                 }
@@ -143,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
 //        super.onDestroy();
 //        if(isServiceRunning()){
 //            Intent i = new Intent(this, AutoReplyService.class);
-//            getApplicationContext().startService(i);
+//            startService(i);
 //
 //        }
 //    }
@@ -156,7 +158,12 @@ public class MainActivity extends AppCompatActivity {
         } else {
             mStartSwitch.setChecked(false);
         }
-
+        if(!isServiceRunning()) {
+//            Toast.makeText(this, "service no", Toast.LENGTH_SHORT).show();
+            Log.i("six","service no");
+//            Intent i = new Intent(this, AutoReplyService.class);
+//            startService(i);
+        }
     }
 
     /**
