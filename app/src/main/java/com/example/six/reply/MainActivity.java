@@ -10,6 +10,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Switch;
@@ -28,6 +29,10 @@ public class MainActivity extends AppCompatActivity {
     private EditText mCutEnd;
     private Switch mModeSwitch;
     private EditText mSelfContent;
+    private Button mCutStartB;
+    private Button mCutEndB;
+    private Button mSetCatchContentB;
+    private Button mSetSelfContentB;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +45,10 @@ public class MainActivity extends AppCompatActivity {
         mCutStart = findViewById(R.id.cutStart);
         mModeSwitch = findViewById(R.id.mode);
         mSelfContent = findViewById(R.id.selfContent);
+        mCutStartB = findViewById(R.id.set_cutStart);
+        mCutEndB = findViewById(R.id.set_cutEnd);
+        mSetCatchContentB = findViewById(R.id.set_catchContent);
+        mSetSelfContentB = findViewById(R.id.set_selfContent);
         init();
         mStartSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -64,16 +73,28 @@ public class MainActivity extends AppCompatActivity {
                 if(compoundButton.isChecked()){
                     mCutStart.setEnabled(false);
                     mCutEnd.setEnabled(false);
+                    mCutStartB.setEnabled(false);
+                    mCutEndB.setEnabled(false);
                     mSelfContent.setEnabled(true);
+                    mSetSelfContentB.setEnabled(true);
+                    SharedPreferences sp = getSharedPreferences(AutoReplyService.CONTENT_SP,MODE_PRIVATE);
+                    sp.edit().putInt("rMode",1).apply();
+                    AutoReplyService.rMode = 1;
                 }else{
                     mCutStart.setEnabled(true);
                     mCutEnd.setEnabled(true);
+                    mCutStartB.setEnabled(true);
+                    mCutEndB.setEnabled(true);
                     mSelfContent.setEnabled(false);
+                    mSetSelfContentB.setEnabled(false);
+                    AutoReplyService.rMode = 0;
+                    SharedPreferences sp = getSharedPreferences(AutoReplyService.CONTENT_SP,MODE_PRIVATE);
+                    sp.edit().putInt("rMode",0).apply();
                 }
             }
         });
-
-        findViewById(R.id.set_catchContent).setOnClickListener(new View.OnClickListener() {
+        //设置自定义检测内容按钮
+        mSetCatchContentB.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String catchContent = mCatchContent.getText().toString();
@@ -84,8 +105,8 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
-
-        findViewById(R.id.set_cutStart).setOnClickListener(new View.OnClickListener() {
+        //设置截断起始字符按钮
+        mCutStartB.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String cutStart = mCutStart.getText().toString();
@@ -96,8 +117,8 @@ public class MainActivity extends AppCompatActivity {
 //                }
             }
         });
-
-        findViewById(R.id.set_cutEnd).setOnClickListener(new View.OnClickListener() {
+        //设置截断结束字符
+        mCutEndB.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String cutEnd = mCutEnd.getText().toString();
@@ -108,8 +129,8 @@ public class MainActivity extends AppCompatActivity {
 //                }
             }
         });
-
-        findViewById(R.id.set_selfContent).setOnClickListener(new View.OnClickListener() {
+        //设置自定义回复内容按钮
+        mSetSelfContentB.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String selfContent = mSelfContent.getText().toString();
@@ -118,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "成功设置自定义回复内容", Toast.LENGTH_SHORT).show();
             }
         });
-
+        //重置按钮
         findViewById(R.id.reset).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -126,6 +147,8 @@ public class MainActivity extends AppCompatActivity {
                 sp.edit().putString(AutoReplyService.SET_CATCH_CONTENT,"").apply();
                 sp.edit().putString(AutoReplyService.SET_CUT_START,"").apply();
                 sp.edit().putString(AutoReplyService.SET_CUT_END,"").apply();
+                sp.edit().putString(AutoReplyService.SET_SELF_CONTENT,"").apply();
+                mSelfContent.setText("");
                 mCatchContent.setText("");
                 mCutStart.setText("");
                 mCutEnd.setText("");
@@ -148,7 +171,6 @@ public class MainActivity extends AppCompatActivity {
 //                }
 //            }
 //        });
-
     }
 
     private void init() {
@@ -156,7 +178,25 @@ public class MainActivity extends AppCompatActivity {
         String content = sp.getString(AutoReplyService.SET_CATCH_CONTENT,"");
         String start = sp.getString(AutoReplyService.SET_CUT_START,"");
         String end = sp.getString(AutoReplyService.SET_CUT_END,"");
-        mSelfContent.setEnabled(false);
+        String selfContent = sp.getString(AutoReplyService.SET_SELF_CONTENT,"");
+        AutoReplyService.rMode = sp.getInt("rMode",0);
+        if(AutoReplyService.rMode == 1) {
+            mModeSwitch.setChecked(true);
+            mCutStart.setEnabled(false);
+            mCutEnd.setEnabled(false);
+            mCutStartB.setEnabled(false);
+            mCutEndB.setEnabled(false);
+            mSelfContent.setEnabled(true);
+            mSetSelfContentB.setEnabled(true);
+        }else{
+            mModeSwitch.setChecked(false);
+            mCutStart.setEnabled(true);
+            mCutEnd.setEnabled(true);
+            mCutStartB.setEnabled(true);
+            mCutEndB.setEnabled(true);
+            mSelfContent.setEnabled(false);
+            mSetSelfContentB.setEnabled(false);
+        }
         if(content.isEmpty()){
             Toast.makeText(this, "请先设置检测内容", Toast.LENGTH_LONG).show();
 //            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -168,17 +208,9 @@ public class MainActivity extends AppCompatActivity {
             mCutStart.setText(start);
         if(!end.isEmpty())
             mCutEnd.setText(end);
+        if(!selfContent.isEmpty())
+            mSelfContent.setText(selfContent);
     }
-
-//    @Override
-//    protected void onDestroy() {
-//        super.onDestroy();
-//        if(isServiceRunning()){
-//            Intent i = new Intent(this, AutoReplyService.class);
-//            startService(i);
-//
-//        }
-//    }
 
     @Override
     protected void onResume() {
@@ -189,8 +221,8 @@ public class MainActivity extends AppCompatActivity {
             mStartSwitch.setChecked(false);
         }
         if(!isServiceRunning()) {
-//            Toast.makeText(this, "service no", Toast.LENGTH_SHORT).show();
-            Log.i("six","service no");
+            Toast.makeText(this, "service no", Toast.LENGTH_SHORT).show();
+//            Log.i("six","service no");
 //            Intent i = new Intent(this, AutoReplyService.class);
 //            startService(i);
         }

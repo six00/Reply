@@ -53,13 +53,12 @@ public class AutoReplyService extends AccessibilityService {
         if (sCurState != STOP) {
 //            Log.d(TAG, "onAccessibilityEvent: sCurState=>" + sCurState);
             AccessibilityNodeInfo rootInActiveWindow = getRootInActiveWindow();
-
             //event.getSource:得到的是被点击的单体对象
             //getRootInActiveWindow():整个窗口的对象
             switch (event.getEventType()) {
 //                case AccessibilityEvent.TYPE_NOTIFICATION_STATE_CHANGED:
 //                    clickNotification(rootInActiveWindow, event);
-////                    break;
+//                    break;
                 case AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED:
                     reply(rootInActiveWindow);
                     Log.i("six", "event ok, good to go");
@@ -71,6 +70,7 @@ public class AutoReplyService extends AccessibilityService {
     }
 
     public static int sCurState;
+    public static int rMode;
     public static final int DEFAULT = 0;
     public static final int STOP = 2;
 
@@ -83,76 +83,87 @@ public class AutoReplyService extends AccessibilityService {
         if (rootInActiveWindow != null) {
             final SharedPreferences sp = getSharedPreferences("CONTENT_SP", MODE_PRIVATE);
             if (sCurState == DEFAULT) {
-                String catchContent = sp.getString("SET_CATCH_CONTENT","大王叫我来巡山喽！");
+                String catchContent = sp.getString("SET_CATCH_CONTENT", "大王叫我来巡山喽！");
                 List<AccessibilityNodeInfo> msgNode = rootInActiveWindow.findAccessibilityNodeInfosByText(catchContent);
                 if (msgNode != null && msgNode.size() > 0) {
                     Log.i("six", "bingo!");
                     //发送对应消息的代码
-                    CharSequence msgChar =null;
-                    try {
-                        msgChar = msgNode.get(2).getText();
-                    }catch (Exception e){
-                        e.printStackTrace();
-                        Toast.makeText(this, "获取内容错误", Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                    String msg = msgChar + "";
-                    String cutStart = sp.getString(SET_CUT_START,"");
-                    String cutEnd = sp.getString(SET_CUT_END,"");
-                    int begin;
-                    int end;
+                    CharSequence msgChar = null;
+                    rMode = sp.getInt("rMode",0);
+                    if (rMode == 0) {
+                        try {
+                            msgChar = msgNode.get(2).getText();
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            Toast.makeText(this, "获取内容错误", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+                        String msg = msgChar + "";
+                        String cutStart = sp.getString(SET_CUT_START, "");
+                        String cutEnd = sp.getString(SET_CUT_END, "");
+                        int begin;
+                        int end;
 //                    begin = msg.indexOf(cutStart)+1;
 //                    end = msg.indexOf(cutEnd);
-                    if(cutStart.isEmpty())
-                        begin = 0;
-                    else {
-                        if(msg.indexOf(cutStart)==-1){
-                            Toast.makeText(this, "没找到对应内容,请确认设置", Toast.LENGTH_SHORT).show();
-                            sCurState = STOP;
+                        if (cutStart.isEmpty())
+                            begin = 0;
+                        else {
+                            if (msg.indexOf(cutStart) == -1) {
+                                Toast.makeText(this, "没找到对应内容,请确认设置", Toast.LENGTH_SHORT).show();
+                                sCurState = STOP;
 //                            stopSelf();
-                            return;
-                        }else
-                            begin = msg.indexOf(cutStart) + 1;
+                                return;
+                            } else
+                                begin = msg.indexOf(cutStart) + 1;
                         }
 
-                    if(cutEnd.isEmpty())
-                        end = msg.length();
-                    else{
-                        if(msg.indexOf(cutEnd)==-1){
-                            Toast.makeText(this, "没找到对应内容,请确认设置", Toast.LENGTH_SHORT).show();
-                            sCurState = STOP;
+                        if (cutEnd.isEmpty())
+                            end = msg.length();
+                        else {
+                            if (msg.indexOf(cutEnd) == -1) {
+                                Toast.makeText(this, "没找到对应内容,请确认设置", Toast.LENGTH_SHORT).show();
+                                sCurState = STOP;
 //                            stopSelf();
-                            return;
-                        }else{
+                                return;
+                            } else {
 //                            //增加英文冒号的兼容
-                            msg = msg.substring(begin);
-                            end = msg.indexOf(cutEnd);
+                                msg = msg.substring(begin);
+                                end = msg.indexOf(cutEnd);
+                            }
                         }
-                    }
-                    String toSend = msg.substring(0, end);
-                    Log.i("six", toSend);
+                        String toSend = msg.substring(0, end);
+                        Log.i("six", toSend);
 
-                    List<AccessibilityNodeInfo> editTextNodeInfo = rootInActiveWindow.findAccessibilityNodeInfosByViewId("com.alibaba.android.rimet:id/et_sendmessage");
-
-                    if (!editTextNodeInfo.isEmpty() && editTextNodeInfo != null) {
-//                        editTextNodeInfo.get(0).setText(toSend);
-                        setTextToView(editTextNodeInfo.get(0), toSend);
-                    } else {
-                        return;
-                    }
-                    List<AccessibilityNodeInfo> sendNodeInfo = rootInActiveWindow.findAccessibilityNodeInfosByViewId("com.alibaba.android.rimet:id/btn_send");
-
-                    if (!sendNodeInfo.isEmpty() && sendNodeInfo != null) {
-                        sendNodeInfo.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    } else
-                        return;
-                    sCurState = STOP;
+                        sendM(rootInActiveWindow, toSend);
 //                    stopSelf();
+                    } else {
+                        String mSelfContent = sp.getString(SET_SELF_CONTENT, "");
+                        if(mSelfContent.isEmpty())
+                            mSelfContent = "好的";
+                        sendM(rootInActiveWindow, mSelfContent);
+                    }
                 } else {
                     return;
                 }
             }
         }
+    }
+    //发送信息方法
+    private void sendM(AccessibilityNodeInfo rootInActiveWindow, String toSend) {
+        List<AccessibilityNodeInfo> editTextNodeInfo = rootInActiveWindow.findAccessibilityNodeInfosByViewId("com.alibaba.android.rimet:id/et_sendmessage");
+        if (!editTextNodeInfo.isEmpty() && editTextNodeInfo != null) {
+//                        editTextNodeInfo.get(0).setText(toSend);
+            setTextToView(editTextNodeInfo.get(0), toSend);
+        } else {
+            return;
+        }
+
+        List<AccessibilityNodeInfo> sendNodeInfo = rootInActiveWindow.findAccessibilityNodeInfosByViewId("com.alibaba.android.rimet:id/btn_send");
+        if (!sendNodeInfo.isEmpty() && sendNodeInfo != null) {
+            sendNodeInfo.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
+        } else
+            return;
+        sCurState = STOP;
     }
 
     //输入内容
@@ -202,7 +213,6 @@ public class AutoReplyService extends AccessibilityService {
 //            }
 //        }
 //    }
-
 
 
     /**
