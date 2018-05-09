@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='UTF-8'?>
+<?xml version="1.0" encoding="UTF-8"?>
 <metadata>
   <com.android.support.constraint/>
   <com.android.databinding/>
@@ -41,4 +41,6 @@
   <tools.base.build-system.debug/>
   <androidx.databinding/>
   <androidx.constraintlayout/>
+  <org.chromium.net/>
+  <com.google.android.play/>
 </metadata>

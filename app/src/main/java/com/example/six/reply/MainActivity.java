@@ -156,21 +156,21 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         //设置延迟时间
-//        findViewById(R.id.set_delay_time).setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                String delayTime = mDelayTimeEd.getText().toString();
-//                if (!TextUtils.isEmpty(delayTime)) {
-//                    SharedPreferences sp = getSharedPreferences(AutoReplyService.RED_ENVELOP_SP, MODE_PRIVATE);
-//                    Integer time = Integer.valueOf(delayTime);
-//                    if (time < 0) {
-//                        time = 0;
-//                    }
-//                    sp.edit().putInt(AutoReplyService.SET_DELAY_TIME, time).apply();
-//                    Toast.makeText(MainActivity.this, "成功设置延迟:" + time + "毫秒", Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//        });
+        findViewById(R.id.set_delay_time).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String delayTime = mDelayTimeEd.getText().toString();
+                if (!TextUtils.isEmpty(delayTime)) {
+                    SharedPreferences sp = getSharedPreferences(AutoReplyService.CONTENT_SP, MODE_PRIVATE);
+                    Integer time = Integer.valueOf(delayTime);
+                    if (time < 0) {
+                        time = 0;
+                    }
+                    sp.edit().putInt(AutoReplyService.SET_DELAY_TIME, time).apply();
+                    Toast.makeText(MainActivity.this, "成功设置延迟:" + time + "毫秒", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
     }
 
     private void init() {
@@ -179,6 +179,7 @@ public class MainActivity extends AppCompatActivity {
         String start = sp.getString(AutoReplyService.SET_CUT_START,"");
         String end = sp.getString(AutoReplyService.SET_CUT_END,"");
         String selfContent = sp.getString(AutoReplyService.SET_SELF_CONTENT,"");
+        String delayMillis = sp.getInt(AutoReplyService.SET_DELAY_TIME,0)+"";
         AutoReplyService.rMode = sp.getInt("rMode",0);
         if(AutoReplyService.rMode == 1) {
             mModeSwitch.setChecked(true);
@@ -210,6 +211,8 @@ public class MainActivity extends AppCompatActivity {
             mCutEnd.setText(end);
         if(!selfContent.isEmpty())
             mSelfContent.setText(selfContent);
+        if(!delayMillis.isEmpty())
+            mDelayTimeEd.setText(delayMillis);
     }
 
     @Override

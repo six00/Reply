@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
@@ -20,13 +21,14 @@ import java.util.List;
  */
 public class AutoReplyService extends AccessibilityService {
     private final String TAG = "AutoReplyService";
-//    private Handler mHandler = new Handler();
+    private Handler mHandler = new Handler();
 
     public static final String CONTENT_SP = "CONTENT_SP";
     public static final String SET_CATCH_CONTENT = "SET_CATCH_CONTENT";
     public static final String SET_CUT_START = "SET_CUT_START";
     public static final String SET_CUT_END = "SET_CUT_END";
     public static final String SET_SELF_CONTENT = "SET_SELF_CONTENT";
+    public static final String SET_DELAY_TIME= "SET_DELAY_TIME";
 
     @Override
     public void onCreate() {
@@ -73,6 +75,7 @@ public class AutoReplyService extends AccessibilityService {
     public static int rMode;
     public static final int DEFAULT = 0;
     public static final int STOP = 2;
+    public static String toSend;
 
     /**
      * 点击
@@ -109,7 +112,7 @@ public class AutoReplyService extends AccessibilityService {
                             begin = 0;
                         else {
                             if (msg.indexOf(cutStart) == -1) {
-                                Toast.makeText(this, "没找到对应内容,请确认设置", Toast.LENGTH_SHORT).show();
+                                Toast.makeText(this, "没找到对应截取内容,请确认设置", Toast.LENGTH_SHORT).show();
                                 sCurState = STOP;
 //                            stopSelf();
                                 return;
@@ -131,10 +134,22 @@ public class AutoReplyService extends AccessibilityService {
                                 end = msg.indexOf(cutEnd);
                             }
                         }
-                        String toSend = msg.substring(0, end);
+                        toSend = msg.substring(0, end);
                         Log.i("six", toSend);
+                        /*
+                        * 延时功能代码
+                        * */
+                        int delayMillis = sp.getInt(SET_DELAY_TIME, 0);
+                        mHandler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                sendM(rootInActiveWindow, toSend);
+                                return;
+                            }
+                        },delayMillis);
+                        sCurState = STOP;
+//                        sendM(rootInActiveWindow, toSend);
 
-                        sendM(rootInActiveWindow, toSend);
 //                    stopSelf();
                     } else {
                         String mSelfContent = sp.getString(SET_SELF_CONTENT, "");
@@ -163,7 +178,7 @@ public class AutoReplyService extends AccessibilityService {
             sendNodeInfo.get(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
         } else
             return;
-        sCurState = STOP;
+//        sCurState = STOP;
     }
 
     //输入内容
